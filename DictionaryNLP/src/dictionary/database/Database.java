@@ -41,16 +41,38 @@ public final class Database {
 			connect();
 		try {
 			if(connect!=null) {
-				String query = "insert into dictionary values ('"+word.getWord()+"','"+word.getPostype()+"','"+word.getDefinition()+"')";
+				String query = "insert into dictionary values ('"+word.getWord()+"','"+word.getPostype()+"')";
 				stmt = connect.createStatement();
 				stmt.executeUpdate(query);
 				System.out.println(query);
+				addDefinition(word);
 				addSynonyms(word);
 				addAntonyms(word);
 				connect.commit();
 				//stmt.close();connect.close();
 			}
 		} catch(SQLException e) {
+			System.err.println(e.getMessage());
+		}
+	}
+	
+	public static void addDefinition(Word word) {
+		if(word.getDefinition()==null || word.getDefinition().isEmpty())
+			return;
+		if(connect==null)
+			connect();
+		try {
+			if(connect!=null) {
+				String query = "insert into definition values ('"+word.getWord()+"','"+word.getDefinition()+"')";
+				stmt = connect.createStatement();
+				stmt.executeUpdate(query);
+				System.out.println(query);
+				connect.commit();
+				//stmt.close();connect.close();
+			}
+		} catch(SQLException e) {
+			System.err.println(e.getMessage());
+		} catch(NullPointerException e) {
 			System.err.println(e.getMessage());
 		}
 	}
@@ -110,6 +132,7 @@ public final class Database {
 					word = new Word(text);
 					word.setPostype(words.getString(2));
 					word.setDefinition(words.getString(3));
+					findDefinition(word);
 					findSynonyms(word);
 					findAntonyms(word);
 				}
@@ -119,8 +142,22 @@ public final class Database {
 		}
 		return word;
 	}
+	
+	private static void findDefinition(Word word) {
+		try {
+			if(connect!=null) {
+				String query = "select definition from definition where word ='"+word.getWord()+"'";
+				stmt = connect.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+				ResultSet def = stmt.executeQuery(query);
+				while(def.next())
+					word.setDefinition(def.getString(1));
+			}
+		} catch(SQLException e) {
+			System.err.println(e.getMessage());
+		}
+	}
 
-	public static void findSynonyms(Word word) {
+	private static void findSynonyms(Word word) {
 		try {
 			if(connect!=null) {
 				String query = "select synonyms from synonyms where word ='"+word.getWord()+"'";
@@ -134,7 +171,7 @@ public final class Database {
 		}
 	}
 
-	public static void findAntonyms(Word word) {
+	private static void findAntonyms(Word word) {
 		try {
 			if(connect!=null) {
 				String query = "select antonym from antonym where word ='"+word.getWord()+"'";
