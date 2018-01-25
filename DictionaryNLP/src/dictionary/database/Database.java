@@ -130,8 +130,7 @@ public final class Database {
 				ResultSet words = stmt.executeQuery(query);
 				if(words.next()) {
 					word = new Word(text);
-					word.setPostype(words.getString(2));
-					word.setDefinition(words.getString(3));
+					findPosType(word,words.getString(2));
 					findDefinition(word);
 					findSynonyms(word);
 					findAntonyms(word);
@@ -143,13 +142,27 @@ public final class Database {
 		return word;
 	}
 	
+	private static void findPosType(Word word, String tag) {
+		try {
+			if(connect!=null) {
+				String query = "select description from postype where tag ='"+tag+"'";
+				stmt = connect.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+				ResultSet pos = stmt.executeQuery(query);
+				while(pos.next())
+					word.setPostype(pos.getString(1));
+			}
+		} catch(SQLException e) {
+			System.err.println(e.getMessage());
+		}
+	}
+	
 	private static void findDefinition(Word word) {
 		try {
 			if(connect!=null) {
 				String query = "select definition from definition where word ='"+word.getWord()+"'";
 				stmt = connect.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
 				ResultSet def = stmt.executeQuery(query);
-				while(def.next())
+				if(def.next())
 					word.setDefinition(def.getString(1));
 			}
 		} catch(SQLException e) {
